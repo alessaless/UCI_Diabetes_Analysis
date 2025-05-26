@@ -1,4 +1,3 @@
-# Attempt to parse time, handling errors
 library(dplyr)
 library(lubridate)
 
@@ -6,19 +5,18 @@ library(lubridate)
 dataset_path <- "./dataset/diabetes_full_data.csv"
 diabetes_data <- read.csv(dataset_path, stringsAsFactors = FALSE)
 
-# Attempt to parse time, handling errors
+# Parsing dell'orario
 diabetes_data$Time <- as.character(diabetes_data$Time)
-time_parsed <- parse_date_time(diabetes_data$Time, orders = c("%H:%M", "%H%M"), quiet = TRUE)
+diabetes_data$ParsedTime <- parse_date_time(diabetes_data$Time, orders = c("%H:%M", "%H%M"), quiet = TRUE)
 
-# Check for parsing issues
-if (any(is.na(time_parsed))) {
+# Controllo errori di parsing
+if (any(is.na(diabetes_data$ParsedTime))) {
   warning("Some time entries could not be parsed.")
 }
 
 # Filtro: solo Code == 48 e ora < 8:00
 diabetes_filtered <- diabetes_data %>%
-  filter(Code == 48) %>%
-  filter(hour(time_parsed) < 8)
+  filter(Code == 57, hour(ParsedTime) < 7)
 
 # Mostra le prime righe
 print(head(diabetes_filtered))
