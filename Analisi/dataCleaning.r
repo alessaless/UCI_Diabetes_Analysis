@@ -28,7 +28,7 @@ ultralente_users <- df %>%
   distinct(PatientID)
 
 # Poi rimuovi i codici da eliminare
-codici_da_escludere <- c(4,33,36, 34, 35, 65, 66, 67, 68, 69, 70, 71, 72)
+codici_da_escludere <- c(4 ,36, 65, 66, 67, 68, 69, 70, 71, 72)
 
 df <- df %>%
   filter(!Code %in% codici_da_escludere)
@@ -45,4 +45,4 @@ glucose_df <- df %>%
   select(PatientID, DateTime, Code, Value, UsesUltraLente)
 
 # Salva il CSV
-write_csv(df, "./dataset/diabetes_clean_data2.csv")
+write_csv(df, "./dataset/diabetes_clean_data3.csv")
