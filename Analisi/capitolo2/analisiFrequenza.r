@@ -49,6 +49,8 @@ distrib_ultralente <- df %>%
   mutate(FreqRelativa = round(FreqAssoluta / sum(FreqAssoluta), 4))
 print(distrib_ultralente)
 
+
+
 plot_ultralente <- ggplot(distrib_ultralente, aes(x = as.factor(UsesUltraLente), y = FreqAssoluta)) +
   geom_bar(stat = "identity", fill = "#e07939") +
   labs(
@@ -59,15 +61,33 @@ plot_ultralente <- ggplot(distrib_ultralente, aes(x = as.factor(UsesUltraLente),
   theme_minimal()
 ggsave("grafici_plot/distribuzione_ultralente.pdf", plot = plot_ultralente, width = 6, height = 4, dpi = 300)
 
-# 🩸 Filtra solo i codici relativi alle misurazioni glicemiche
+
+
+# 📌 Codici associati ai valori glicemici
 glucose_codes <- c(48, 57, 58, 59, 60, 61, 62, 63, 64)
+
+# 📥 Filtro del dataset per includere solo i codici glicemici
 glucose_df <- df %>%
   filter(Code %in% glucose_codes)
 
-# 📊 Istogramma con colori viridis in base alla frequenza
+# 📦 Suddividi i valori glicemici in classi (bin) di ampiezza 20 (come nel grafico)
+glucose_freq <- glucose_df %>%
+  mutate(ClasseGlicemia = cut(Value, breaks = seq(0, max(Value, na.rm = TRUE) + 20, by = 20), right = FALSE)) %>%
+  group_by(ClasseGlicemia) %>%
+  summarise(
+    FreqAssoluta = n()
+  ) %>%
+  mutate(
+    FreqRelativa = round(FreqAssoluta / sum(FreqAssoluta), 4)
+  )
+
+# 📋 Stampa tabella frequenze glicemia
+print(glucose_freq, n = Inf)
+
+# 📊 Istogramma della distribuzione dei valori glicemici
 glicem <- ggplot(glucose_df, aes(x = Value)) +
   geom_histogram(aes(fill = ..count..), binwidth = 20, color = "white") +
-  scale_fill_viridis_c(option = "D") +  # puoi cambiare palette qui (A, B, C, etc.)
+  scale_fill_viridis_c(option = "D") +  # Palette viridis (opzioni: A, B, C, D, E, F)
   labs(
     title = "Distribuzione dei valori glicemici",
     x = "Glicemia (mg/dL)",
@@ -76,8 +96,9 @@ glicem <- ggplot(glucose_df, aes(x = Value)) +
   ) +
   theme_minimal()
 
-# 💾 Salvataggio in PDF nella cartella grafici
+# 💾 Salvataggio grafico PDF
 ggsave("grafici_plot/distribuzione_valori_glicemici.pdf", plot = glicem, width = 6, height = 4, dpi = 300)
+
 
 
 # 📊 Grafico: boxplot delle glicemie per tutti i pazienti, divisi per uso UltraLente
@@ -119,11 +140,21 @@ media_paziente <- media_paziente %>%
     )
   )
 
-# 📊 Grafico: distribuzione dei pazienti in fasce cliniche (basata sulla media)
+# 📦 Calcola la frequenza assoluta dei pazienti per ciascuna fascia e stato UltraLente
 fasce_media <- media_paziente %>%
   group_by(UsesUltraLente, FasciaMedia) %>%
   summarise(Count = n(), .groups = "drop")
 
+# ➕ Calcola anche la frequenza relativa all'interno del totale
+fasce_media <- fasce_media %>%
+  mutate(
+    FreqRelativa = round(Count / sum(Count), 4)
+  )
+
+# 📋 Stampa la tabella con frequenza assoluta e relativa
+print(fasce_media, n = Inf)
+
+# 📈 Grafico a barre della distribuzione delle fasce glicemiche medie
 grafico_fasce_media <- ggplot(fasce_media, aes(x = FasciaMedia, y = Count, fill = as.factor(UsesUltraLente))) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(
@@ -133,9 +164,12 @@ grafico_fasce_media <- ggplot(fasce_media, aes(x = FasciaMedia, y = Count, fill 
     fill = "Usa UltraLente"
   ) +
   theme_minimal()
+
+# 💾 Salvataggio del grafico in PDF
 ggsave("grafici_plot/fasce_glicemia_media_per_paziente.pdf", plot = grafico_fasce_media, width = 7, height = 4.5, dpi = 300)
 
-# 📊 Mappa dei codici a momenti della giornata
+
+# 📊 Mappa dei codici glicemici a momenti specifici della giornata
 glucose_df <- glucose_df %>%
   mutate(Misurazione = case_when(
     Code == 58 ~ "Pre-colazione",
@@ -148,12 +182,21 @@ glucose_df <- glucose_df %>%
     TRUE ~ "Altro"
   ))
 
-# 📈 Conteggio per tipo di misurazione
+# 📦 Calcolo del conteggio per tipo di misurazione e uso UltraLente
 tipi_misurazione <- glucose_df %>%
   group_by(UsesUltraLente, Misurazione) %>%
   summarise(Count = n(), .groups = "drop")
 
-# 📊 Grafico leggibile della frequenza dei tipi di misurazione glicemica
+# ➕ Calcolo della frequenza relativa globale (rispetto al totale dei pazienti)
+tipi_misurazione <- tipi_misurazione %>%
+  mutate(
+    FreqRelativa = round(Count / sum(Count), 4)
+  )
+
+# 📋 Stampa della tabella con frequenza assoluta e relativa
+print(tipi_misurazione, n = Inf)
+
+# 📈 Grafico leggibile della frequenza dei tipi di misurazione glicemica
 grafico_misure <- ggplot(tipi_misurazione, aes(x = Misurazione, y = Count, fill = as.factor(UsesUltraLente))) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(
@@ -163,10 +206,11 @@ grafico_misure <- ggplot(tipi_misurazione, aes(x = Misurazione, y = Count, fill 
     fill = "Usa UltraLente"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # 👈 Etichette ruotate a 45°
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # 👈 Ruota le etichette per leggibilità
 
-# 💾 Salva in PDF con dimensione adeguata
+# 💾 Salvataggio del grafico in PDF
 ggsave("grafici_plot/frequenza_misure_glicemiche.pdf", plot = grafico_misure, width = 9, height = 5, dpi = 300)
+
 
 
 # 📊 Heatmap: valori glicemici medi per ora del giorno, divisi per uso UltraLente
