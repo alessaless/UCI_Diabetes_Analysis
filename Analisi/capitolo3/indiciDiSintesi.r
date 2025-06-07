@@ -4,7 +4,7 @@ library(ggplot2)
 library(moments)
 
 # Funzione per plottare skewness e salvare in PDF
-plot_skewness <- function(dataframe, titolo_plot, nome_file_output) {
+plot_skewness <- function(dataframe, titolo_plot, nome_file_output, colore) {
   
   # Calcola skewness
   skew_val <- skewness(dataframe$Value)
@@ -12,7 +12,7 @@ plot_skewness <- function(dataframe, titolo_plot, nome_file_output) {
   
   # Genera il grafico
   p <- ggplot(dataframe, aes(x = Value)) +
-    geom_histogram(aes(y = ..density..), bins = 30, fill = "#69b3a2", color = "white", alpha = 0.7) +
+    geom_histogram(aes(y = ..density..), bins = 30, fill = colore, color = "white", alpha = 0.7) +
     geom_density(color = "darkblue", size = 1) +
     labs(
       title = titolo_plot,
@@ -96,11 +96,11 @@ cat("Coefficiente di variazione:", coeff_var_val_ultralente, "\n\n")
 # Usa il dataset glicemia_data o glicemia_data_ultralente già filtrato
 plot_skewness(glicemia_data, 
               titolo_plot = "Distribuzione glicemia - Tutti i pazienti", 
-              nome_file_output = "glicemia_skewness_tutti")
+              nome_file_output = "glicemia_skewness_tutti", "#1f77b4")
 
 plot_skewness(glicemia_data_ultralente, 
               titolo_plot = "Distribuzione glicemia - Pazienti con insulina UltraLente", 
-              nome_file_output = "glicemia_skewness_ultralente")
+              nome_file_output = "glicemia_skewness_ultralente", "#ec3131")
 
 
 # Curtosi - Tutti i pazienti
