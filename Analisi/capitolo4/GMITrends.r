@@ -1,9 +1,17 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Trend GMI settimanale per pazienti con/senza insulina ultralenta
+#   – 2 PDF per i pazienti CON ultralenta
+#   – 5 PDF per i pazienti SENZA ultralenta
+#   – legenda con PatientID e colore
+#   – riepilogo finale: quanti pazienti migliorano (GMI finale > GMI iniziale)
+# ──────────────────────────────────────────────────────────────────────────────
 
+# ── Librerie ─────────────────────────────────────────────────────────────────
+library(readr)     # read_csv()
+library(dplyr)     # filter(), mutate(), summarise()
+library(ggplot2)   # grafici
 
-library(readr)     # per read_csv()
-library(dplyr)     # per filter(), mutate()
-library(ggplot2)   # per i grafici
-
+# ── Percorsi ─────────────────────────────────────────────────────────────────
 data_path  <- "dataset/gmi_results.csv"   # CSV di origine
 output_dir <- "gmi_trends"                # cartella per i PDF
 if (!dir.exists(output_dir)) dir.create(output_dir)
@@ -19,7 +27,6 @@ df <- read_csv(data_path, show_col_types = FALSE) |>
 # ── Funzione: suddivide i pazienti in gruppi e genera un PDF per gruppo ──────
 plot_by_groups <- function(data, uses_ultra, n_groups, prefix) {
   ids <- sort(unique(data$PatientID))                # ordina gli ID paziente
-
   group_index <- cut(seq_along(ids),
                      breaks = n_groups,
                      labels = FALSE, include.lowest = TRUE)
@@ -27,7 +34,7 @@ plot_by_groups <- function(data, uses_ultra, n_groups, prefix) {
 
   for (i in seq_along(groups)) {
     subset_ids <- groups[[i]]
-    if (length(subset_ids) == 0) next               
+    if (length(subset_ids) == 0) next
 
     titolo <- sprintf(
       "GMI – pazienti %s (gruppo %d/%d)",
@@ -53,6 +60,7 @@ plot_by_groups <- function(data, uses_ultra, n_groups, prefix) {
   }
 }
 
+# ── Creazione grafici ────────────────────────────────────────────────────────
 plot_by_groups(
   data       = filter(df, UsesUltraLente),
   uses_ultra = TRUE,
@@ -66,3 +74,20 @@ plot_by_groups(
   n_groups   = 5,
   prefix     = "gmi_no_ultralente"
 )
+
+# ── Riepilogo finale: pazienti con GMI finale > GMI iniziale ─────────────────
+gmi_change <- df |>
+  arrange(PatientID, Week) |>
+  group_by(PatientID, UsesUltraLente) |>
+  summarise(first_GMI = first(GMI),
+            last_GMI  = last(GMI),
+            .groups   = "drop") |>
+  mutate(increase = last_GMI > first_GMI)
+
+count_ultra     <- sum(gmi_change$increase & gmi_change$UsesUltraLente)
+count_no_ultra  <- sum(gmi_change$increase & !gmi_change$UsesUltraLente)
+
+cat(sprintf("\nPazienti che usano ultralenta con GMI finale maggiore dell'iniziale: %d\n",
+            count_ultra))
+cat(sprintf("Pazienti che non usano ultralenta con GMI finale maggiore dell'iniziale: %d\n",
+            count_no_ultra))
